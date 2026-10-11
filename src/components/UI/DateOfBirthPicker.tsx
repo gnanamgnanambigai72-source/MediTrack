@@ -29,17 +29,49 @@ export default function DateOfBirthPicker({ value, onChange, disabled }: Props) 
 
   const update = useCallback(
     (year: string, month: string, day: string) => {
+      // Only update the final value when all three parts are selected
       if (year && month && day) {
         const d = parseInt(day);
         const maxDay = getDaysInMonth(parseInt(month), parseInt(year));
         const safeDay = d > maxDay ? maxDay : d;
         onChange(`${year}-${month.padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`);
       } else {
-        onChange('');
+        // Keep partial selection in a temporary format so user can complete selection
+        // Store as temporary format: year-month-day (even if incomplete)
+        const tempValue = `${year || ''}-${month || ''}-${day || ''}`;
+        onChange(tempValue === '--' ? '' : tempValue);
       }
     },
     [onChange]
   );
+
+  // Handle day change - adjust if day exceeds max days in month
+  const handleDayChange = (day: string) => {
+    const year = selectedYear;
+    const month = selectedMonth;
+    
+    if (year && month && day) {
+      const maxDay = getDaysInMonth(parseInt(month), parseInt(year));
+      const safeDay = parseInt(day) > maxDay ? String(maxDay).padStart(2, '0') : day;
+      update(year, month, safeDay);
+    } else {
+      update(year, month, day);
+    }
+  };
+
+  // Handle month change - adjust day if needed
+  const handleMonthChange = (month: string) => {
+    const year = selectedYear;
+    const day = selectedDay;
+    
+    if (year && month && day) {
+      const maxDay = getDaysInMonth(parseInt(month), parseInt(year));
+      const safeDay = parseInt(day) > maxDay ? String(maxDay).padStart(2, '0') : day;
+      update(year, month, safeDay);
+    } else {
+      update(year, month, day);
+    }
+  };
 
   const baseSelect =
     'flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 dark:text-white placeholder-gray-400 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
@@ -50,7 +82,7 @@ export default function DateOfBirthPicker({ value, onChange, disabled }: Props) 
       <select
         disabled={disabled}
         value={selectedDay}
-        onChange={(e) => update(selectedYear, selectedMonth, e.target.value)}
+        onChange={(e) => handleDayChange(e.target.value)}
         className={`${baseSelect} w-20`}
         aria-label="Day"
       >
@@ -66,7 +98,7 @@ export default function DateOfBirthPicker({ value, onChange, disabled }: Props) 
       <select
         disabled={disabled}
         value={selectedMonth}
-        onChange={(e) => update(selectedYear, e.target.value, selectedDay)}
+        onChange={(e) => handleMonthChange(e.target.value)}
         className={`${baseSelect} flex-[2]`}
         aria-label="Month"
       >
